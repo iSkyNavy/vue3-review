@@ -1,36 +1,62 @@
 <script setup>
 import { ref } from 'vue';
+import BlogPost from './components/BlogPost.vue';
+import LoadingSpinnerVue from './components/LoadingSpinner.vue';
+import PaginatePostVue from './components/PaginatePost.vue';
 
-  console.log('vueeee');
-  const author = "Diego Ramos";
-  const fruits= ["fresa", "lucuna", "mango"];
-  const count = ref(0);
-  const favoriteNumbers = ref([]);;
+const posts = ref([])
+const postForPage = 10;
+const init = ref(0)
+const end = ref(postForPage)
+const favoritePostId = ref();
+const isLoading = ref(true);
 
+const handleClickButton = (id) => {
+  favoritePostId.value = id;
+}
 
-  const handleIncrement = () => {
-    count.value++;
+const handlePagination = (direction) => {
+  if (direction == 'prev') {
+    init.value = init.value - postForPage
+    end.value = end.value - postForPage;
+    return;
   }
-  const handleDecrement = () => {
-    count.value--;
-  }
-  const handleAddNumber = () => {
-    favoriteNumbers.value.push(count.value);
-  }
+  init.value = init.value + postForPage;
+  end.value = end.value + postForPage;
+}
+
+fetch('https://jsonplaceholder.typicode.com/posts').
+then(res => res.json()).
+then(data => posts.value = data).
+catch(e => console.error(e)).
+finally(() => {
+  setTimeout(() => {
+    isLoading.value = false
+  }, 2*1000);
+})
+
 </script>
 
 <template>
-  <h1>Hola Mundo {{author}}</h1>
 
-  <ul>
-    <li v-for="(fruit, index) in fruits" :key="index">{{ fruit }}</li>
-  </ul>
-  <h2 :style="'color:' + `${count <= 0 ? 'red' : 'green'};`">{{ count }}</h2>
-  <h3>{{ favoriteNumbers }}</h3>
-  <button @click="handleIncrement">Increment</button>
-  <button @click="handleDecrement">Decrement</button>
-  <button @click="count=0">Reset</button>
-  <button @click="handleAddNumber" :disabled="favoriteNumbers.includes(count)">Add</button>
+  <LoadingSpinnerVue v-if="isLoading" />
+  <div class="container py-4" v-else>
+    <h1 class="mb-2">Random Posts</h1>
+    <h3>Mi Favorite post id is: {{ favoritePostId }}</h3>
+    <PaginatePostVue
+      @handlePagination="handlePagination"
+      :disabledPrev="init == 0"
+      :disabledNext="end == 100"
+    />
+    <BlogPost
+      v-for="post in posts.slice(init, end)"
+      :key="post.id"
+      :body="post.body"
+      :id="post.id"
+      :title="post.id+ ' - ' + post.title"
+      @handleClickButton="handleClickButton"
+      ></BlogPost>
+  </div>
 
 </template>
 
